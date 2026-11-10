@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пошаговое выполнение Python-кода</title>
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --panel: #ffffff;
+    --ink: #1d2433;
+    --muted: #68738a;
+    --line: #e5e9f2;
+    --accent: #6258e8;
+    --accent-soft: #eeedff;
+    --green: #16865a;
+    --green-soft: #e8f7f0;
+    --orange: #a76512;
+    --orange-soft: #fff4df;
+    --red: #b34242;
+    --red-soft: #fff0ef;
+    --shadow: 0 12px 34px rgba(32, 43, 76, .07);
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .page { max-width: 1440px; margin: 0 auto; padding: 30px 28px 48px; }
+  header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:22px; }
+  h1 { margin:0 0 7px; font-size: clamp(25px, 3vw, 34px); line-height:1.15; letter-spacing:-.04em; }
+  .subtitle { color:var(--muted); max-width:780px; }
+  .tag { flex:none; padding:7px 11px; border:1px solid #dcd9ff; color:#5148c8; background:var(--accent-soft); border-radius:999px; font-size:12px; font-weight:750; }
+  .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:9px; padding:13px; margin-bottom:16px; background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+  button { border:0; border-radius:10px; padding:10px 15px; font:inherit; font-size:14px; font-weight:700; cursor:pointer; transition:transform .12s, opacity .12s, background .12s; }
+  button:hover:not(:disabled) { transform:translateY(-1px); }
+  button:disabled { opacity:.42; cursor:not-allowed; }
+  .primary { background:var(--accent); color:white; }
+  .secondary { background:#f0f2f8; color:#30394d; }
+  .success { background:var(--green-soft); color:var(--green); }
+  .danger { background:var(--red-soft); color:var(--red); }
+  .toolbar-note { margin-left:auto; color:var(--muted); font-size:12px; }
+  .layout { display:grid; grid-template-columns:minmax(340px, 1.05fr) minmax(300px, .95fr) minmax(270px, .8fr); gap:16px; align-items:start; }
+  .panel { min-width:0; background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; }
+  .panel-head { display:flex; justify-content:space-between; align-items:center; padding:15px 17px; border-bottom:1px solid var(--line); }
+  .panel-head h2 { margin:0; font-size:15px; letter-spacing:-.01em; }
+  .panel-head small { color:var(--muted); font-size:11px; }
+  .code-wrap { padding:13px 10px 15px; background:#fbfcff; }
+  .code-line { display:grid; grid-template-columns:30px 1fr; align-items:start; gap:7px; padding:5px 8px; min-height:31px; border-left:3px solid transparent; border-radius:7px; font:13px/1.65 var(--mono); white-space:pre; overflow-x:auto; }
+  .code-line.active { background:#eeedff; border-left-color:var(--accent); color:#332aab; font-weight:700; }
+  .code-line.done .ln { color:#9aa3b3; }
+  .ln { color:#a5adbc; text-align:right; user-select:none; }
+  .kw { color:#7a48c6; font-weight:700; }
+  .fn { color:#176ca9; }
+  .str { color:#14805d; }
+  .comment { color:#8791a4; }
+  .code-foot { border-top:1px solid var(--line); padding:11px 16px 14px; color:var(--muted); font-size:12px; }
+  .center-stack, .right-stack { display:grid; gap:16px; }
+  .explain { padding:16px; }
+  .step-label { display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:var(--accent-soft); color:#5148c8; font-size:11px; font-weight:800; margin-bottom:10px; }
+  .explain h3 { margin:0 0 8px; font-size:18px; letter-spacing:-.025em; }
+  .explain p { margin:0; color:#4f5a70; font-size:14px; }
+  .explain .detail { margin-top:12px; padding:10px 12px; border-radius:10px; background:#f6f7fb; color:#4e5870; font-size:12px; }
+  .status { margin-top:13px; padding:10px 12px; border-radius:10px; font-size:12px; font-weight:650; background:var(--green-soft); color:var(--green); }
+  .status.warn { background:var(--orange-soft); color:var(--orange); }
+  .status.error { background:var(--red-soft); color:var(--red); }
+  .input-area { padding:15px 16px 16px; }
+  .prompt { font:12px var(--mono); color:var(--muted); margin-bottom:8px; }
+  .input-row { display:flex; gap:8px; }
+  input { width:100%; min-width:0; padding:11px 12px; border:1px solid #dce1ec; border-radius:10px; outline:none; font:14px var(--mono); color:var(--ink); }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(98,88,232,.12); }
+  .input-help { margin-top:8px; color:var(--muted); font-size:11px; }
+  .vars { padding:12px 15px 15px; }
+  .var-row { display:grid; grid-template-columns:74px 1fr; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid #eff1f6; }
+  .var-row:last-child { border-bottom:0; }
+  .var-name { font:700 13px var(--mono); color:#5b53c9; }
+  .var-value { min-width:0; font:13px var(--mono); overflow-wrap:anywhere; }
+  .var-value.empty { color:#a0a8b7; font-family:inherit; font-style:italic; }
+  .var-desc { grid-column:2; color:var(--muted); font-size:11px; margin-top:-7px; }
+  .console { padding:13px 15px 15px; background:#171b28; color:#e7ebf5; min-height:150px; font:12px/1.65 var(--mono); }
+  .console-line { white-space:pre-wrap; overflow-wrap:anywhere; }
+  .console-line.prompt-line { color:#aeb9d5; }
+  .console-line.output-line { color:#79e0ad; }
+  .console-line.wait-line { color:#ffd28a; }
+  .console-empty { color:#8892a7; }
+  .trace { padding:11px 15px 14px; max-height:260px; overflow:auto; }
+  .trace-item { display:grid; grid-template-columns:22px 1fr; gap:8px; padding:8px 0; border-bottom:1px solid #eff1f6; font-size:11px; color:#5b6579; }
+  .trace-item:last-child { border-bottom:0; }
+  .trace-num { color:#9aa3b3; font:11px var(--mono); }
+  .trace-item strong { color:#313b50; font-weight:700; }
+  .notes { margin-top:17px; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .note { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:15px 17px; }
+  .note h3 { margin:0 0 7px; font-size:14px; }
+  .note p { margin:0; color:#586379; font-size:12px; }
+  .note.warning { border-color:#f0d6a9; background:#fffaf0; }
+  .note.warning h3 { color:#966018; }
+  .note.good { border-color:#cde9dc; background:#f5fcf8; }
+  .note.good h3 { color:#18724f; }
+  .reset-info { display:none; margin-top:10px; padding:10px 12px; border:1px dashed #d6d9e5; border-radius:10px; color:#69748a; font-size:12px; }
+  @media (max-width: 1050px) { .layout { grid-template-columns:1fr 1fr; } .code-panel { grid-row:span 2; } }
+  @media (max-width: 720px) { .page { padding:20px 13px 35px; } header { display:block; } .tag { display:inline-block; margin-top:12px; } .layout { grid-template-columns:1fr; } .code-panel { grid-row:auto; } .toolbar-note { width:100%; margin:3px 0 0; } .notes { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>Как выполняется программа</h1>
+      <div class="subtitle">Пошаговый разбор циклов <code>while</code> и <code>for</code>, условий <code>if</code>, ввода <code>input()</code> и команды <code>break</code>.</div>
+    </div>
+    <div class="tag">ИНТЕРАКТИВНЫЙ ТРЕНАЖЁР · PYTHON</div>
+  </header>
+
+  <div class="toolbar">
+    <button class="primary" id="nextBtn">Следующий шаг →</button>
+    <button class="secondary" id="autoBtn">▶ Автопоказ</button>
+    <button class="secondary" id="backBtn" disabled>← Назад</button>
+    <button class="danger" id="resetBtn">Сначала</button>
+    <span class="toolbar-note" id="stepCounter">Шагов выполнено: 0</span>
+  </div>
+
+  <main class="layout">
+    <section class="panel code-panel">
+      <div class="panel-head"><h2>1. Исходный код</h2><small>Текущая строка подсвечена</small></div>
+      <div class="code-wrap" id="code">
+        <div class="code-line" data-line="1"><span class="ln">1</span><span>action = <span class="fn">input</span>(<span class="str">'введите game or off'</span>)</span></div>
+        <div class="code-line" data-line="2"><span class="ln">2</span><span><span class="kw">while</span> action != <span class="str">'off'</span>:</span></div>
+        <div class="code-line" data-line="3"><span class="ln">3</span><span>    <span class="kw">if</span> action == <span class="str">'game'</span>:</span></div>
+        <div class="code-line" data-line="4"><span class="ln">4</span><span>        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(3):</span></div>
+        <div class="code-line" data-line="5"><span class="ln">5</span><span>            attempt = <span class="fn">input</span>(<span class="str">'введите число'</span>)</span></div>
+        <div class="code-line" data-line="6"><span class="ln">6</span><span>            <span class="kw">if</span> attempt == <span class="str">'5'</span>:</span></div>
+        <div class="code-line" data-line="7"><span class="ln">7</span><span>                <span class="fn">print</span>(<span class="str">'победа'</span>)</span></div>
+        <div class="code-line" data-line="8"><span class="ln">8</span><span>                <span class="kw">break</span></span></div>
+      </div>
+      <div class="code-foot">Отступы на странице нормализованы до корректного Python-формата. Логика команд сохранена.</div>
+    </section>
+
+    <div class="center-stack">
+      <section class="panel">
+        <div class="panel-head"><h2>2. Что происходит сейчас</h2><small id="lineBadge">Ожидание запуска</small></div>
+        <div class="explain">
+          <div class="step-label" id="stepLabel">ГОТОВ К ЗАПУСКУ</div>
+          <h3 id="explainTitle">Начните выполнение</h3>
+          <p id="explainText">Нажмите «Следующий шаг». Программа начнёт с запроса команды: <b>game</b> или <b>off</b>.</p>
+          <div class="detail" id="explainDetail">На каждом шаге здесь будет объясняться, какая строка выполняется и почему управление переходит к следующей строке.</div>
+          <div class="status" id="statusBox">Программа ещё не запущена.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>3. Ввод данных</h2><small>Имитация клавиатуры</small></div>
+        <div class="input-area">
+          <div class="prompt" id="inputPrompt">Сначала нажмите «Следующий шаг»</div>
+          <div class="input-row">
+            <input id="userInput" type="text" placeholder="Здесь появится запрос input()" disabled autocomplete="off">
+            <button class="primary" id="sendInputBtn" disabled>Ввести</button>
+          </div>
+          <div class="input-help" id="inputHelp">Когда программа дойдёт до input(), введите значение и нажмите «Ввести».</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="right-stack">
+      <section class="panel">
+        <div class="panel-head"><h2>4. Значения переменных</h2><small>Обновляются на каждом шаге</small></div>
+        <div class="vars">
+          <div class="var-row"><div class="var-name">action</div><div class="var-value empty" id="varAction">ещё не создана</div><div class="var-desc">Команда для внешнего цикла while</div></div>
+          <div class="var-row"><div class="var-name">i</div><div class="var-value empty" id="varI">ещё не создана</div><div class="var-desc">Номер попытки: 0, 1 или 2</div></div>
+          <div class="var-row"><div class="var-name">attempt</div><div class="var-value empty" id="varAttempt">ещё не создана</div><div class="var-desc">Число, введённое пользователем (строка)</div></div>
+          <div class="var-row"><div class="var-name">range(3)</div><div class="var-value" id="varRange">0, 1, 2</div><div class="var-desc">Три значения, которые последовательно получает i</div></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>5. Консоль программы</h2><small>input / print</small></div>
+        <div class="console" id="console"><div class="console-empty">Здесь появятся запросы и результат print().</div></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head"><h2>6. История шагов</h2><small>Последние действия</small></div>
+        <div class="trace" id="trace"><div class="console-empty">Пока нет выполненных шагов.</div></div>
+      </section>
+    </div>
+  </main>
+
+  <section class="notes">
+    <div class="note warning">
+      <h3>⚠ Важная особенность этого кода</h3>
+      <p><b>break</b> завершает только ближайший цикл <b>for</b>, но не цикл <b>while</b>. После победы программа снова проверит <code>action != 'off'</code>. Так как новое значение <code>action</code> нигде не вводится, при <code>action = 'game'</code> внешний цикл будет продолжаться бесконечно.</p>
+    </div>
+    <div class="note good">
+      <h3>Как программа может завершиться?</h3>
+      <p>Только если самое первое значение <code>action</code> равно строго <code>'off'</code>. Если ввести другое слово, условие <code>if action == 'game'</code> не выполнится, а <code>while</code> начнёт повторяться без новых запросов ввода.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const initialState = () => ({
+    pc: 1, action: undefined, i: undefined, attempt: undefined,
+    forNext: 0, whileCount: 0, pendingInput: null,
+    console: [], trace: [], currentLine: 1,
+    halted: false, stuck: false, message: null, steps: 0
+  });
+  let state = initialState();
+  let history = [];
+  let autoTimer = null;
+
+  const $ = (id) => document.getElementById(id);
+  const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const val = (v) => v === undefined ? 'ещё не создана' : (typeof v === 'string' ? `'${v}'` : String(v));
+  const isDefined = (v) => v !== undefined;
+
+  function save() { history.push(JSON.parse(JSON.stringify(state))); }
+  function addTrace(title, detail) {
+    state.trace.push({ title, detail, n: state.steps });
+  }
+  function setMessage(label, title, text, detail, status, type='') {
+    state.message = { label, title, text, detail, status, type };
+  }
+  function requestInput(variable, prompt, line, explanation) {
+    state.pendingInput = { variable, prompt, line };
+    state.currentLine = line;
+    setMessage('ОЖИДАНИЕ ВВОДА', `Выполняется input()`, explanation,
+      `Python приостанавливает выполнение и ждёт, пока пользователь введёт значение. После ввода оно будет записано в переменную <b>${variable}</b>.`,
+      `Ожидается ввод: ${variable}.`, 'warn');
+  }
+
+  function advance() {
+    if (state.halted || state.pendingInput) return;
+    save();
+    state.steps++;
+    switch (state.pc) {
+      case 1:
+        requestInput('action', 'введите game or off', 1,
+          `Строка 1 вызывает <code>input()</code>. Программа просит ввести команду. Результат всегда сохраняется как строка в переменную <code>action</code>.`);
+        addTrace('Строка 1: вызов input()', 'Программа запросила команду game или off.');
+        break;
+      case 2:
+        state.currentLine = 2;
+        if (state.action !== 'off') {
+          state.whileCount++;
+          state.pc = 3;
+          setMessage('ПРОВЕРКА УСЛОВИЯ', 'Условие while истинно',
+            `Проверяем: <code>${escapeHtml(val(state.action))} != 'off'</code>. Результат — <b>True</b>, потому что action не равен строке 'off'. Тело цикла выполняется.`,
+            `Это вход №${state.whileCount} во внешний цикл while. Значение action не меняется автоматически.`,
+            'Переходим к строке 3.', '');
+          addTrace('Строка 2: while — True', `action ${val(state.action)} не равно 'off'; начинаем итерацию while №${state.whileCount}.`);
+        } else {
+          state.halted = true;
+          setMessage('ПРОВЕРКА УСЛОВИЯ', 'Условие while ложно',
+            `Проверяем: <code>'off' != 'off'</code>. Результат — <b>False</b>, поэтому тело while больше не выполняется и программа заканчивается.`,
+            `Цикл не запускается ни разу. Значения i и attempt так и не создаются.`,
+            'Программа завершена штатно.', '');
+          addTrace('Строка 2: while — False', 'action равно off; программа завершилась.');
+        }
+        break;
+      case 3:
+        state.currentLine = 3;
+        if (state.action === 'game') {
+          state.forNext = 0;
+          state.pc = 4;
+          setMessage('ПРОВЕРКА УСЛОВИЯ', 'Команда game распознана',
+            `Проверяем: <code>${escapeHtml(val(state.action))} == 'game'</code>. Результат — <b>True</b>, поэтому запускается цикл for.`,
+            `Цикл <code>for i in range(3)</code> выполнится максимум три раза: i примет значения 0, 1 и 2.`,
+            'Переходим к строке 4.');
+          addTrace('Строка 3: if — True', 'action равен game; начинаем цикл for.');
+        } else {
+          state.stuck = true;
+          state.halted = true;
+          setMessage('ОБНАРУЖЕН БЕСКОНЕЧНЫЙ ЦИКЛ', 'Условие if ложно — программа зацикливается',
+            `Проверяем: <code>${escapeHtml(val(state.action))} == 'game'</code>. Результат — <b>False</b>. Блок for пропускается. Затем Python возвращается к строке 2, но action всё ещё не равно 'off'.`,
+            `В коде нет новой команды <code>action = input(...)</code>. Поэтому while снова будет истинным, if снова ложным — и так бесконечно. Тренажёр останавливает повторение, чтобы браузер не завис.`,
+            'Симуляция остановлена: обнаружен бесконечный цикл.', 'error');
+          addTrace('Строка 3: if — False', `action ${val(state.action)} не равен game; при возврате к while получится бесконечное повторение.`);
+        }
+        break;
+      case 4:
+        state.currentLine = 4;
+        if (state.forNext < 3) {
+          state.i = state.forNext;
+          state.forNext++;
+          state.pc = 5;
+          setMessage('ЦИКЛ FOR', `Началась попытка №${state.i + 1}`,
+            `Цикл берёт следующее значение из <code>range(3)</code>. Сейчас <code>i = ${state.i}</code>. Это ${state.i + 1}-я попытка из 3.`,
+            `После тела цикла управление вернётся к строке 4. Следующее значение i будет ${state.forNext < 3 ? state.forNext : 'значений больше не останется'}.`,
+            `Переменная i получила значение ${state.i}.`);
+          addTrace('Строка 4: for — новая итерация', `i = ${state.i}; попытка ${state.i + 1} из 3.`);
+        } else {
+          state.pc = 2;
+          setMessage('ЦИКЛ FOR', 'Три попытки закончились',
+            `Все значения <code>range(3)</code> использованы: 0, 1 и 2. Цикл for завершается сам, потому что новых значений для i больше нет.`,
+            `Python возвращается к строке 2 и снова проверяет while. action всё ещё равно ${escapeHtml(val(state.action))}, поэтому while опять будет True.`,
+            'Возврат к строке 2: внешний цикл while продолжится.', 'warn');
+          addTrace('Строка 4: for завершён', 'Попытки закончились; управление вернулось к условию while.');
+        }
+        break;
+      case 5:
+        requestInput('attempt', 'введите число', 5,
+          `Выполняется <code>attempt = input('введите число')</code>. Программа ждёт ответ. Даже если пользователь вводит цифру 5, input() возвращает строку <code>'5'</code>, а не число 5.`);
+        addTrace('Строка 5: вызов input()', `Запрошено значение для attempt; текущая попытка i = ${state.i}.`);
+        break;
+      case 6:
+        state.currentLine = 6;
+        if (state.attempt === '5') {
+          state.pc = 7;
+          setMessage('ПРОВЕРКА УСЛОВИЯ', 'Угадано число 5',
+            `Проверяем: <code>${escapeHtml(val(state.attempt))} == '5'</code>. Результат — <b>True</b>. Выполнение переходит к print('победа').`,
+            `Сравниваются две строки. Ввод '05', ' 5' или '5.0' не подошёл бы — нужно точное совпадение с символом 5.`,
+            'Условие истинно: переходим к строке 7.');
+          addTrace('Строка 6: if — True', 'attempt равно строке 5; будет напечатана победа.');
+        } else {
+          state.pc = 4;
+          setMessage('ПРОВЕРКА УСЛОВИЯ', 'Число не угадано',
+            `Проверяем: <code>${escapeHtml(val(state.attempt))} == '5'</code>. Результат — <b>False</b>. Строка 7 пропускается, команда break не выполняется.`,
+            `Python возвращается к строке 4 за следующей итерацией for. Если i уже был 2, цикл for завершится и управление перейдёт к while.`,
+            'Переходим к следующей итерации for.', 'warn');
+          addTrace('Строка 6: if — False', `attempt ${val(state.attempt)} не равен '5'; продолжаем for.`);
+        }
+        break;
+      case 7:
+        state.currentLine = 7;
+        state.console.push({ type: 'output', text: 'победа' });
+        state.pc = 8;
+        setMessage('ВЫВОД В КОНСОЛЬ', 'Команда print() выводит сообщение',
+          `В консоль добавляется текст <b>победа</b>. После print Python переходит к следующей строке — break.`,
+          `print() ничего не возвращает в переменную. Она только отображает сообщение пользователю.`,
+          'В консоли появилось: победа.');
+        addTrace('Строка 7: print()', 'В консоль выведено слово «победа».');
+        break;
+      case 8:
+        state.currentLine = 8;
+        state.pc = 2;
+        state.forNext = 3;
+        setMessage('КОМАНДА BREAK', 'break завершил цикл for',
+          `Команда <code>break</code> немедленно прерывает ближайший цикл — здесь это <code>for</code>. Выполнение переходит на строку 2, где проверяется внешний <code>while</code>.`,
+          `Важно: break не завершает все циклы сразу. action по-прежнему равно 'game', значит условие while снова True и начнётся новый набор из трёх попыток.`,
+          'Цикл for остановлен; цикл while продолжается.', 'warn');
+        addTrace('Строка 8: break', 'Прерван только for; управление вернулось к while.');
+        break;
+      default:
+        state.halted = true;
+        setMessage('ОСТАНОВКА', 'Симуляция завершена', 'Больше нечего выполнять.', '', 'Симуляция завершена.');
+    }
+    render();
+  }
+
+  function submitInput() {
+    if (!state.pendingInput) return;
+    const value = $('userInput').value;
+    save();
+    const req = state.pendingInput;
+    state[req.variable] = value;
+    state.console.push({ type: 'prompt', text: `${req.prompt}\n> ${value}` });
+    state.pendingInput = null;
+    state.pc = req.variable === 'action' ? 2 : 6;
+    state.currentLine = req.line;
+    state.steps++;
+    addTrace(`Ввод: ${req.variable} = ${val(value)}`, `Пользователь ввёл ${val(value)}; значение сохранено в переменную ${req.variable}.`);
+    setMessage('ВВОД ПРИНЯТ', `В переменную ${req.variable} записано значение`,
+      `Результат <code>input()</code> сохранён: <code>${req.variable} = ${escapeHtml(val(value))}</code>. Теперь программа продолжит выполнение со следующей инструкции.`,
+      req.variable === 'action' ? `Сначала будет проверено условие while: action != 'off'.` : `Теперь будет проверено условие if: attempt == '5'.`,
+      `Значение ${req.variable} обновлено.`);
+    $('userInput').value = '';
+    render();
+    $('userInput').focus();
+  }
+
+  function render() {
+    document.querySelectorAll('.code-line').forEach(el => {
+      const n = Number(el.dataset.line);
+      el.classList.toggle('active', !state.halted && n === state.currentLine);
+      el.classList.toggle('done', n < state.currentLine);
+    });
+    const m = state.message;
+    if (m) {
+      $('stepLabel').textContent = m.label;
+      $('explainTitle').textContent = m.title;
+      $('explainText').innerHTML = m.text;
+      $('explainDetail').innerHTML = m.detail;
+      $('statusBox').textContent = m.status;
+      $('statusBox').className = 'status' + (m.type ? ' ' + m.type : '');
+      $('lineBadge').textContent = state.pendingInput ? `Строка ${state.currentLine} · ввод` : (state.halted ? 'Симуляция остановлена' : `Выполнение · строка ${state.currentLine}`);
+    }
+    $('varAction').textContent = val(state.action);
+    $('varI').textContent = val(state.i);
+    $('varAttempt').textContent = val(state.attempt);
+    $('varAction').classList.toggle('empty', !isDefined(state.action));
+    $('varI').classList.toggle('empty', !isDefined(state.i));
+    $('varAttempt').classList.toggle('empty', !isDefined(state.attempt));
+
+    const con = $('console');
+    con.innerHTML = state.console.length ? state.console.map(item =>
+      `<div class="console-line ${item.type === 'output' ? 'output-line' : 'prompt-line'}">${escapeHtml(item.text)}</div>`
+    ).join('') : '<div class="console-empty">Здесь появятся запросы и результат print().</div>';
+    if (state.pendingInput) con.innerHTML += `<div class="console-line wait-line">Ожидание ввода…</div>`;
+
+    const trace = $('trace');
+    trace.innerHTML = state.trace.length ? state.trace.slice().reverse().map((item, idx) =>
+      `<div class="trace-item"><div class="trace-num">${state.trace.length - idx}.</div><div><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.detail)}</div></div>`
+    ).join('') : '<div class="console-empty">Пока нет выполненных шагов.</div>';
+
+    $('stepCounter').textContent = `Шагов выполнено: ${state.steps} · циклов while: ${state.whileCount}`;
+    $('nextBtn').disabled = state.halted || !!state.pendingInput;
+    $('backBtn').disabled = history.length === 0;
+    $('sendInputBtn').disabled = !state.pendingInput;
+    $('userInput').disabled = !state.pendingInput;
+    $('inputPrompt').textContent = state.pendingInput ? `Программа просит: ${state.pendingInput.prompt}` : (state.halted ? 'Ввод больше не ожидается' : 'Сейчас input() не выполняется');
+    $('userInput').placeholder = state.pendingInput ? `Введите значение для ${state.pendingInput.variable}` : 'Здесь появится запрос input()';
+    $('inputHelp').textContent = state.pendingInput ? `Значение будет сохранено в переменную ${state.pendingInput.variable}. Нажмите Enter или кнопку «Ввести».` : 'Когда программа дойдёт до input(), введите значение и нажмите «Ввести».';
+  }
+
+  function stopAuto() {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+    $('autoBtn').textContent = '▶ Автопоказ';
+  }
+  function toggleAuto() {
+    if (autoTimer) { stopAuto(); return; }
+    if (state.halted || state.pendingInput) return;
+    $('autoBtn').textContent = 'Ⅱ Пауза';
+    autoTimer = setInterval(() => {
+      if (state.halted || state.pendingInput) { stopAuto(); return; }
+      advance();
+      if (state.halted || state.pendingInput) stopAuto();
+    }, 900);
+  }
+  function goBack() {
+    if (!history.length) return;
+    stopAuto();
+    state = history.pop();
+    render();
+  }
+  function reset() {
+    stopAuto();
+    state = initialState();
+    history = [];
+    setMessage('ГОТОВ К ЗАПУСКУ', 'Начните выполнение',
+      `Нажмите «Следующий шаг». Программа начнёт с запроса команды: <b>game</b> или <b>off</b>.`,
+      'На каждом шаге здесь будет объясняться, какая строка выполняется и почему управление переходит к следующей строке.',
+      'Программа ещё не запущена.');
+    $('userInput').value = '';
+    render();
+  }
+
+  $('nextBtn').addEventListener('click', advance);
+  $('sendInputBtn').addEventListener('click', submitInput);
+  $('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitInput(); });
+  $('backBtn').addEventListener('click', goBack);
+  $('resetBtn').addEventListener('click', reset);
+  $('autoBtn').addEventListener('click', toggleAuto);
+  reset();
+})();
+</script>
+</body>
+</html>
